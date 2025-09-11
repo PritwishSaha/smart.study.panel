@@ -1,0 +1,53 @@
+{
+  "name": "smart-study-platform",
+  "version": "1.0.0",
+  "description": "Smart Study Platform - A platform for sharing and accessing study materials",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:create": "node -e \"require('dotenv').config(); const { exec } = require('child_process'); exec(`mysql -u ${process.env.DB_USER}${process.env.DB_PASSWORD ? ` -p${process.env.DB_PASSWORD}` : ''} -e 'CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'\`, (error) => { if (error) { console.error(' Error creating database:', error.message); process.exit(1); } console.log(' Database created successfully'); });\"",
+    "db:drop": "node -e \"require('dotenv').config(); const { exec } = require('child_process'); exec(`mysql -u ${process.env.DB_USER}${process.env.DB_PASSWORD ? ` -p${process.env.DB_PASSWORD}` : ''} -e 'DROP DATABASE IF EXISTS ${process.env.DB_NAME}'\`, (error) => { if (error) { console.error(' Error dropping database:', error.message); process.exit(1); } console.log(' Database dropped successfully'); });\"",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:seed:undo": "sequelize-cli db:seed:undo",
+    "db:seed:undo:all": "sequelize-cli db:seed:undo:all",
+    "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate && npm run db:seed",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "study",
+    "education",
+    "material",
+    "platform"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "colors": "^1.4.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^6.0.1",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.2.4",
+    "sequelize": "^6.31.0",
+    "xss-clean": "^0.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "sequelize-cli": "^6.5.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Study Material Access Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <i class="fas fa-graduation-cap"></i>
+        <h1>StudyHub</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <div id="stage" class="card"></div>
+    </main>
+
+    <footer class="footer">
+      <p> 2023 StudyHub. All rights reserved.</p>
+      <div class="social-links">
+        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Utility functions
+    const now = () => new Date().toLocaleString();
+    const getUsers = () => JSON.parse(localStorage.getItem('ss_users') || '{}');
+    const saveUsers = u => localStorage.setItem('ss_users', JSON.stringify(u));
+    const getMats = () => JSON.parse(localStorage.getItem('ss_materials') || '{}');
+    const saveMats = m => localStorage.setItem('ss_materials', JSON.stringify(m));
+    const setSession = u => localStorage.setItem('ss_session', JSON.stringify(u));
+    const getSession = () => JSON.parse(localStorage.getItem('ss_session') || 'null');
+    const clearSession = () => localStorage.removeItem('ss_session');
+    const escapeHtml = str => String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s]));
+
+    // Role Selection Screen
+    function showRolePick() {
+      const stage = document.getElementById('stage');
+      stage.className = 'card fade-in';
+      stage.innerHTML = `
+        <div class="text-center">
+          <h2>Welcome to StudyHub</h2>
+          <p class="mt-1 mb-3">Please select your role to continue</p>
+          
+          <div class="role-selection">
+            <div class="role-card" data-role="student">
+              <div class="role-icon">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+              <h3>I'm a Student</h3>
+              <p>Access study materials from your teachers</p>
+            </div>
+            
+            <div class="role-card" data-role="teacher">
+              <div class="role-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </div>
+              <h3>I'm a Teacher</h3>
+              <p>Upload and manage study materials</p>
+            </div>
+          </div>
+          
+          <div class="form-group mt-3">
+            <label for="displayName">Your Name</label>
+            <input type="text" id="displayName" placeholder="Enter your name" class="w-100" />
+          </div>
+          
+          <div class="d-flex gap-2 mt-3">
+            <button id="continueBtn" class="btn btn-primary w-100">Continue</button>
+          </div>
+        </div>
+      `;
+      
+      // Add role selection functionality
+      const roleCards = stage.querySelectorAll('.role-card');
+      let selectedRole = 'student';
+      
+      roleCards.forEach(card => {
+        card.addEventListener('click', () => {
+          roleCards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedRole = card.dataset.role;
+        });
+      });
+      
+      // Set first role as default selected
+      roleCards[0].classList.add('selected');
+      
+      // Continue button click handler
+      stage.querySelector('#continueBtn').addEventListener('click', () => {
+        const name = document.getElementById('displayName').value.trim() || 'Guest';
+        showLogin(selectedRole, name);
+      });
+    }
+
+    // Login Screen
+    function showLogin(role, name) {
+      const stage = document.getElementById('stage');
+      stage.className = 'card fade-in';
+      stage.innerHTML = `
+        <div>
+          <div class="text-center mb-4">
+            <h2>Welcome back, ${escapeHtml(name)}!</h2>
+            <p class="text-muted">Log in to continue as a ${role}</p>
+          </div>
+          
+          <form id="loginForm" class="mt-3">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="userId">${role === 'student' ? 'Student ID / Teacher Code' : 'Teacher ID'}</label>
+              <input type="text" id="userId" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" required class="w-100" />
+            </div>
+            
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary w-100">Log In</button>
+              <button type="button" id="goSignup" class="btn btn-outline w-100">Sign Up</button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      // Form submission
+      document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const userId = document.getElementById('userId').value.trim();
+        const password = document.getElementById('password').value;
+        const users = getUsers();
+        const user = users[userId];
+        
+        if (!user || user.email !== email || user.role !== role) {
+          showAlert('No matching user found', 'error');
+          return;
+        }
+        
+        if (user.password !== password) {
+          showAlert('Incorrect password', 'error');
+          return;
+        }
+        
+        setSession(user);
+        showDashboard();
+      });
+      
+      // Go to signup
+      document.getElementById('goSignup').addEventListener('click', showSignup);
+    }
+
+    // Signup Screen
+    function showSignup() {
+      const stage = document.getElementById('stage');
+      stage.className = 'card fade-in';
+      stage.innerHTML = `
+        <div>
+          <h2 class="text-center">Create Account</h2>
+          
+          <form id="signupForm" class="mt-3">
+            <div class="form-group">
+              <label for="roleSel">I am a</label>
+              <select id="roleSel" class="w-100">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+              </select>
+            </div>
+            
+            <div id="studentExtras">
+              <div class="form-group">
+                <label for="courseIn">Course</label>
+                <input type="text" id="courseIn" class="w-100" />
+              </div>
+              <div class="form-group">
+                <label for="semIn">Semester</label>
+                <input type="number" id="semIn" min="1" max="12" class="w-100" />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="userIdIn">User ID</label>
+              <input type="text" id="userIdIn" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="nameIn">Full Name</label>
+              <input type="text" id="nameIn" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="emailIn">Email</label>
+              <input type="email" id="emailIn" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="phoneIn">Phone Number</label>
+              <input type="tel" id="phoneIn" required class="w-100" />
+            </div>
+            
+            <div class="form-group">
+              <label for="passIn">Password</label>
+              <input type="password" id="passIn" required class="w-100" minlength="6" />
+            </div>
+            
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary w-100">Create Account</button>
+              <button type="button" id="toLogin" class="btn btn-outline w-100">Back to Login</button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      const roleSel = document.getElementById('roleSel');
+      const studentExtras = document.getElementById('studentExtras');
+      
+      roleSel.addEventListener('change', () => {
+        studentExtras.style.display = roleSel.value === 'student' ? 'block' : 'none';
+      });
+      
+      // Trigger change to set initial state
+      roleSel.dispatchEvent(new Event('change'));
+      
+      // Form submission
+      document.getElementById('signupForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const role = roleSel.value;
+        const userId = document.getElementById('userIdIn').value.trim();
+        const name = document.getElementById('nameIn').value.trim();
+        const email = document.getElementById('emailIn').value.trim();
+        const phone = document.getElementById('phoneIn').value.trim();
+        const password = document.getElementById('passIn').value;
+        const course = document.getElementById('courseIn').value.trim();
+        const semester = document.getElementById('semIn').value.trim();
+        
+        const users = getUsers();
+        
+        if (users[userId]) {
+          showAlert('User ID already exists', 'error');
+          return;
+        }
+        
+        // Create user object
+        users[userId] = {
+          userId,
+          name,
+          role,
+          email,
+          phone,
+          password,
+          course: role === 'student' ? course : undefined,
+          semester: role === 'student' ? semester : undefined,
+          createdAt: now()
+        };
+        
+        saveUsers(users);
+        showAlert('Account created successfully!', 'success');
+        showLogin(role, name);
+      });
+      
+      // Back to login
+      document.getElementById('toLogin').addEventListener('click', () => {
+        showRolePick();
+      });
+    }
+
+    // Dashboard
+    function showDashboard() {
+      const session = getSession();
+      if (!session) {
+        showRolePick();
+        return;
+      }
+      
+      const isTeacher = session.role === 'teacher';
+      const stage = document.getElementById('stage');
+      stage.className = 'fade-in';
+      
+      stage.innerHTML = `
+        <div class="dashboard">
+          <div class="main-content">
+            <div class="welcome-banner card">
+              <h2>Welcome back, ${escapeHtml(session.name)}! <span class="wave">👋</span></h2>
+              <p class="text-muted">${isTeacher ? 'Manage your study materials' : 'Access your study materials'}</p>
+            </div>
+            
+            <div class="card mt-3">
+              ${isTeacher ? `
+                <h3>Upload New Material</h3>
+                <form id="uploadForm" class="mt-3">
+                  <div class="form-group">
+                    <label for="matTitle">Title</label>
+                    <input type="text" id="matTitle" required class="w-100" />
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="matFile">File</label>
+                    <input type="file" id="matFile" required class="w-100" />
+                  </div>
+                  
+                  <button type="submit" class="btn btn-primary w-100 mt-2">
+                    <i class="fas fa-upload"></i> Upload
+                  </button>
+                </form>
+                
+                <h3 class="mt-4">Your Materials</h3>
+              ` : `
+                <div class="search-container">
+                  <div class="form-group">
+                    <label for="teacherIdIn">Teacher's ID</label>
+                    <div class="input-with-button">
+                      <input type="text" id="teacherIdIn" placeholder="Enter teacher's ID" class="w-100" />
+                      <button id="viewBtn" class="btn btn-primary">
+                        <i class="fas fa-search"></i> View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <h3 class="mt-4">Available Materials</h3>
+              `}
+              
+              <div id="matList" class="materials-list mt-3">
+                <!-- Materials will be loaded here -->
+              </div>
+            </div>
+          </div>
+          
+          <aside class="sidebar">
+            <div class="user-profile card">
+              <div class="avatar">
+                ${session.name.charAt(0).toUpperCase()}
+              </div>
+              <h3 class="mt-2">${escapeHtml(session.name)}</h3>
+              <p class="text-muted">${session.role === 'teacher' ? '👨‍🏫 Teacher' : '🎓 Student'}</p>
+              
+              <div class="user-details mt-3">
+                <p><i class="fas fa-envelope"></i> ${escapeHtml(session.email)}</p>
+                <p><i class="fas fa-id-badge"></i> ${escapeHtml(session.userId)}</p>
+                ${session.course ? `<p><i class="fas fa-book"></i> ${escapeHtml(session.course)}</p>` : ''}
+                ${session.semester ? `<p><i class="fas fa-layer-group"></i> Semester ${escapeHtml(session.semester)}</p>` : ''}
+              </div>
+              
+              <button id="logoutBtn" class="btn btn-outline w-100 mt-3">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+            
+            <div class="card mt-3">
+              <h3>Quick Actions</h3>
+              <button class="btn btn-outline w-100 mt-2" id="changePasswordBtn">
+                <i class="fas fa-key"></i> Change Password
+              </button>
+              <button class="btn btn-outline w-100 mt-2" id="helpBtn">
+                <i class="fas fa-question-circle"></i> Help & Support
+              </button>
+            </div>
+          </aside>
+        </div>
+      `;
+      
+      // Set up event listeners
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        clearSession();
+        showRolePick();
+      });
+      
+      if (isTeacher) {
+        // Teacher view - handle file upload
+        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          
+          const title = document.getElementById('matTitle').value.trim();
+          const fileInput = document.getElementById('matFile');
+          const file = fileInput.files[0];
+          
+          if (!file) {
+            showAlert('Please select a file', 'error');
+            return;
+          }
+          
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const mats = getMats();
+            if (!mats[session.userId]) {
+              mats[session.userId] = [];
+            }
+            
+            mats[session.userId].push({
+              title,
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: (file.size / 1024).toFixed(2) + ' KB',
+              data: e.target.result,
+              uploadedAt: now()
+            });
+            
+            saveMats(mats);
+            showAlert('Material uploaded successfully!', 'success');
+            renderMaterials(session.userId, true);
+            
+            // Reset form
+            document.getElementById('uploadForm').reset();
+          };
+          
+          reader.readAsDataURL(file);
+        });
+        
+        // Initial render of teacher's materials
+        renderMaterials(session.userId, true);
+      } else {
+        // Student view - handle teacher ID input
+        document.getElementById('viewBtn').addEventListener('click', () => {
+          const teacherId = document.getElementById('teacherIdIn').value.trim();
+          if (!teacherId) {
+            showAlert('Please enter a teacher ID', 'error');
+            return;
+          }
+          renderMaterials(teacherId, false);
+        });
+      }
+      
+      // Help button
+      document.getElementById('helpBtn')?.addEventListener('click', () => {
+        showAlert('Please contact support@studyhub.com for assistance.', 'info');
+      });
+      
+      // Change password button
+      document.getElementById('changePasswordBtn')?.addEventListener('click', () => {
+        showAlert('Password change functionality coming soon!', 'info');
+      });
+    }
+
+    // Render materials list
+    function renderMaterials(ownerId, canDelete) {
+      const list = document.getElementById('matList');
+      if (!list) return;
+      
+      const mats = getMats()[ownerId] || [];
+      
+      if (mats.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <p>No materials found</p>
+            ${canDelete ? '<p class="text-muted">Upload your first material using the form above</p>' : ''}
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = mats.map((mat, index) => `
+        <div class="material-card">
+          <div class="material-info">
+            <h4>${escapeHtml(mat.title)}</h4>
+            <div class="material-meta">
+              <span><i class="far fa-file"></i> ${mat.fileName}</span>
+              <span><i class="far fa-clock"></i> ${new Date(mat.uploadedAt).toLocaleDateString()}</span>
+              ${mat.fileSize ? `<span><i class="fas fa-database"></i> ${mat.fileSize}</span>` : ''}
+            </div>
+          </div>
+          <div class="material-actions">
+            <a href="${mat.data}" download="${mat.fileName}" class="btn btn-primary" title="Download">
+              <i class="fas fa-download"></i>
+            </a>
+            ${canDelete ? `
+              <button class="btn btn-danger delete-btn" data-index="${index}" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+      
+      // Add delete button handlers
+      if (canDelete) {
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this material?')) {
+              const mats = getMats();
+              mats[ownerId].splice(parseInt(btn.dataset.index), 1);
+              saveMats(mats);
+              renderMaterials(ownerId, true);
+              showAlert('Material deleted successfully', 'success');
+            }
+          });
+        });
+      }
+    }
+
+    // Show alert message
+    function showAlert(message, type = 'info') {
+      // Remove any existing alerts
+      const existingAlert = document.querySelector('.alert');
+      if (existingAlert) {
+        existingAlert.remove();
+      }
+      
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} fade-in`;
+      alert.innerHTML = `
+        <div class="alert-content">
+          ${type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}
+          <span>${message}</span>
+        </div>
+        <button class="close-btn">&times;</button>
+      `;
+      
+      document.body.appendChild(alert);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        alert.classList.add('fade-out');
+        setTimeout(() => alert.remove(), 300);
+      }, 5000);
+      
+      // Close button
+      alert.querySelector('.close-btn').addEventListener('click', () => {
+        alert.classList.add('fade-out');
+        setTimeout(() => alert.remove(), 300);
+      });
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add some utility classes to the body
+      document.body.classList.add('loaded');
+      
+      // Initialize the app based on session
+      if (getSession()) {
+        showDashboard();
+      } else {
+        showRolePick();
+      }
+    });
+  </script>
+</body>
+</html>
