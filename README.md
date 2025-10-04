@@ -169,5 +169,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For support, please open an issue on the GitHub repository or contact [your-email@example.com](mailto:pritwish2006nht@gmail.com).
+For support, please open an issue on the GitHub repository or contact [pritwish2006nht@gmail.com](mailto:pritwish2006nht@gmail.com).
+
 
